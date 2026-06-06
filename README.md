@@ -40,7 +40,7 @@
 
 BiliNote 是一个开源的 AI 视频笔记助手，支持通过哔哩哔哩、YouTube、抖音等视频链接，自动提取内容并生成结构清晰、重点明确的 Markdown 格式笔记。支持插入截图、原片跳转、AI 问答等功能。
 
-**在原版的基础上增加Antropic协议支持的自定义接口和模型名称功能，去掉API baseUrl的http和代理拦截**
+**在原版的基础上增加Antropic协议支持的自定义接口和模型名称功能，去掉API baseUrl的http和代理拦截，并使用uv管理依赖**
 
 > 💡 **想直接用、不想本地部署？** —— [BiliNote Pro 在线版 www.bilinote.app](https://www.bilinote.app/) 已上线，云端托管、开箱即用，省去依赖安装 / 代理配置 / 模型下载的全部麻烦。
 
