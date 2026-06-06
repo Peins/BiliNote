@@ -40,6 +40,8 @@
 
 BiliNote 是一个开源的 AI 视频笔记助手，支持通过哔哩哔哩、YouTube、抖音等视频链接，自动提取内容并生成结构清晰、重点明确的 Markdown 格式笔记。支持插入截图、原片跳转、AI 问答等功能。
 
+**在原版的基础上增加Antropic协议支持的自定义接口和模型名称功能，去掉API baseUrl的http和代理拦截**
+
 > 💡 **想直接用、不想本地部署？** —— [BiliNote Pro 在线版 www.bilinote.app](https://www.bilinote.app/) 已上线，云端托管、开箱即用，省去依赖安装 / 代理配置 / 模型下载的全部麻烦。
 
 ## 🌐 在线使用（推荐）
@@ -55,13 +57,7 @@ BiliNote 是一个开源的 AI 视频笔记助手，支持通过哔哩哔哩、Y
 
 ## 💎 BiliNote AI笔记系统一对一搭建服务
 
-提供 **BiliNote AI笔记系统一对一搭建服务**：专人一对一远程协助，从环境部署、模型配置到上手使用全程陪跑，帮你快速跑通整套系统。扫码添加微信，备注「搭建服务」即可咨询：
-
-<table align="center">
-  <tr>
-    <td align="center"><img src="./doc/remote-install-wechat.png" alt="BiliNote AI笔记系统一对一搭建服务" width="220" /><br/>BiliNote AI笔记系统一对一搭建服务</td>
-  </tr>
-</table>
+提供 **BiliNote AI笔记系统一对一搭建服务**：专人一对一远程协助
 
 ## 🔧 功能特性
 
@@ -352,22 +348,7 @@ docker-compose -f docker-compose.gpu.yml up -d
 - [x] 基于 RAG 的笔记内容 AI 问答
 - [ ] 笔记导出为 PDF / Word / Notion
 
-### Contact and Join-联系和加入社区
 
-扫码加入 BiliNote 交流微信群（共 5 个群，任选一个即可；二维码会定期更新，如已失效请到 [Issues](https://github.com/JefferyHcool/BiliNote/issues) 反馈）：
-
-<table align="center">
-  <tr>
-    <td align="center"><img src="./doc/wechat-group-1.png" alt="BiliNote 交流群 1" width="200" /><br/>交流群 1</td>
-    <td align="center"><img src="./doc/wechat-group-2.png" alt="BiliNote 交流群 2" width="200" /><br/>交流群 2</td>
-    <td align="center"><img src="./doc/wechat-group-3.png" alt="BiliNote 交流群 3" width="200" /><br/>交流群 3</td>
-  </tr>
-  <tr>
-    <td align="center"><img src="./doc/wechat-group-4.png" alt="BiliNote 交流群 4" width="200" /><br/>交流群 4</td>
-    <td align="center"><img src="./doc/wechat-group-5.png" alt="BiliNote 交流群 5" width="200" /><br/>交流群 5</td>
-    <td></td>
-  </tr>
-</table>
 
 
 
