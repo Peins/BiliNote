@@ -20,6 +20,7 @@ export function ModelSelector({ providerId }: ModelSelectorProps) {
     useModelStore()
   const [search, setSearch] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [manualInput, setManualInput] = useState('')
 
   const filteredModels = models.filter(model => {
     const keywords = search.trim().toLowerCase().split(/\s+/)
@@ -34,14 +35,16 @@ export function ModelSelector({ providerId }: ModelSelectorProps) {
   }, [providerId])
 
   const handleSubmit = async () => {
-    if (!selectedModel) {
-      toast.error('请选择一个模型')
+    const modelToSave = selectedModel || manualInput.trim()
+    if (!modelToSave) {
+      toast.error('请选择或输入一个模型名称')
       return
     }
     try {
       setSubmitting(true)
-      await addNewModel(providerId, selectedModel)
+      await addNewModel(providerId, modelToSave)
       toast.success('保存模型成功 🎉')
+      setManualInput('')
     } catch (error) {
       toast.error('保存失败')
     } finally {
@@ -63,7 +66,7 @@ export function ModelSelector({ providerId }: ModelSelectorProps) {
         </Button>
       </div>
 
-      <Select value={selectedModel} onValueChange={setSelectedModel}>
+      <Select value={selectedModel} onValueChange={(val) => { setSelectedModel(val); setManualInput('') }}>
         <SelectTrigger className="w-[300px]">
           <SelectValue placeholder="请选择模型" />
         </SelectTrigger>
@@ -84,7 +87,17 @@ export function ModelSelector({ providerId }: ModelSelectorProps) {
         </SelectContent>
       </Select>
 
-      <Button onClick={handleSubmit} disabled={submitting || !selectedModel}>
+      <div className="flex flex-col gap-1">
+        <span className="text-sm text-muted-foreground">或手动输入模型名称：</span>
+        <Input
+          placeholder="输入模型名称，如 claude-opus-4-20250514"
+          value={manualInput}
+          onChange={e => { setManualInput(e.target.value); setSelectedModel('') }}
+          className="w-[300px]"
+        />
+      </div>
+
+      <Button onClick={handleSubmit} disabled={submitting || (!selectedModel && !manualInput.trim())}>
         {submitting ? '保存中...' : '保存模型'}
       </Button>
     </div>

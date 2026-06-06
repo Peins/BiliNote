@@ -29,7 +29,7 @@
     "type": "built-in",
     "logo": "Claude",
     "api_key": "",
-    "base_url": "https://"
+    "base_url": "https://api.anthropic.com"
   },
   {
     "id": "gemini",

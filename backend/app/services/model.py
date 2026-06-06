@@ -4,8 +4,9 @@ from app.db.model_dao import insert_model, get_all_models, get_model_by_provider
 from app.db.provider_dao import get_enabled_providers
 from app.enmus.exception import ProviderErrorEnum
 from app.exceptions.provider import ProviderError
-from app.gpt.gpt_factory import GPTFactory
+from app.gpt.gpt_factory import GPTFactory, _is_anthropic_provider
 from app.gpt.provider.OpenAI_compatible_provider import OpenAICompatibleProvider
+from app.gpt.provider.anthropic_provider import AnthropicShimClient
 from app.models.model_config import ModelConfig
 from app.services.provider import ProviderService
 from app.utils.logger import get_logger
@@ -129,11 +130,20 @@ class ModelService:
                 )
             model = saved_models[0]["model_name"]
 
-        ok = OpenAICompatibleProvider.test_connection(
-            api_key=provider.get('api_key'),
-            base_url=provider.get('base_url'),
-            model=model,
-        )
+        # 根据供应商类型选择连通性测试方式
+        config = ModelService._build_model_config(provider)
+        if _is_anthropic_provider(config):
+            ok = AnthropicShimClient.test_connection(
+                api_key=provider.get('api_key'),
+                base_url=provider.get('base_url'),
+                model=model,
+            )
+        else:
+            ok = OpenAICompatibleProvider.test_connection(
+                api_key=provider.get('api_key'),
+                base_url=provider.get('base_url'),
+                model=model,
+            )
         if ok:
             return True
         raise ProviderError(
