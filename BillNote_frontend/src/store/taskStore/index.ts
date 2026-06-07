@@ -53,6 +53,7 @@ export interface Task {
     quality: string
     model_name: string
     provider_id: string
+    style?: string
   }
 }
 
@@ -243,8 +244,9 @@ export const useTaskStore = create<TaskStore>()(
             screenshot: undefined,
             platform: item.result?.audio_meta?.platform || '',
             quality: '',
-            model_name: '',
-            provider_id: '',
+            model_name: item.result?.model_name || '',
+            provider_id: item.result?.provider_id || '',
+            style: item.result?.style || '',
           },
         }))
 

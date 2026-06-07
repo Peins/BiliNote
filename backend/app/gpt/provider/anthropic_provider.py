@@ -73,7 +73,14 @@ class ModelList:
 
 # ─── 转换工具 ─────────────────────────────────────────────────────────────────
 
-def _convert_messages_for_anthropic(messages: list[dict]) -> tuple[Optional[str], list[dict]]:
+def _msg_get(msg, key, default=None):
+    """从 dict 或对象中安全获取属性值。"""
+    if isinstance(msg, dict):
+        return msg.get(key, default)
+    return getattr(msg, key, default)
+
+
+def _convert_messages_for_anthropic(messages: list) -> tuple[Optional[str], list[dict]]:
     """将 OpenAI 格式的 messages 转为 Anthropic 格式。
 
     Returns:
@@ -83,11 +90,11 @@ def _convert_messages_for_anthropic(messages: list[dict]) -> tuple[Optional[str]
     anthropic_messages = []
 
     for msg in messages:
-        role = msg.get("role", "user")
+        role = _msg_get(msg, "role", "user")
 
         if role == "system":
             # Anthropic 将 system 作为独立参数
-            system_prompt = msg.get("content", "")
+            system_prompt = _msg_get(msg, "content", "")
             continue
 
         if role == "tool":
@@ -96,19 +103,19 @@ def _convert_messages_for_anthropic(messages: list[dict]) -> tuple[Optional[str]
                 "role": "user",
                 "content": [{
                     "type": "tool_result",
-                    "tool_use_id": msg.get("tool_call_id", ""),
-                    "content": msg.get("content", ""),
+                    "tool_use_id": _msg_get(msg, "tool_call_id", ""),
+                    "content": _msg_get(msg, "content", ""),
                 }]
             })
             continue
 
         if role == "assistant":
             # 可能包含 tool_calls（从上一轮 LLM 响应追加的 msg 对象）
-            tool_calls = getattr(msg, "tool_calls", None) or msg.get("tool_calls")
+            tool_calls = _msg_get(msg, "tool_calls", None)
             if tool_calls:
                 content_blocks = []
                 # 先添加文本部分（如有）
-                text = getattr(msg, "content", None) or msg.get("content")
+                text = _msg_get(msg, "content", None)
                 if text:
                     content_blocks.append({"type": "text", "text": text})
                 for tc in tool_calls:
@@ -128,12 +135,12 @@ def _convert_messages_for_anthropic(messages: list[dict]) -> tuple[Optional[str]
                     })
                 anthropic_messages.append({"role": "assistant", "content": content_blocks})
             else:
-                content = getattr(msg, "content", None) or msg.get("content", "")
+                content = _msg_get(msg, "content", "")
                 anthropic_messages.append({"role": "assistant", "content": content})
             continue
 
         # user message
-        content = msg.get("content", "")
+        content = _msg_get(msg, "content", "")
         if isinstance(content, list):
             # 多模态 content 数组 → Anthropic 格式
             anthropic_content = []

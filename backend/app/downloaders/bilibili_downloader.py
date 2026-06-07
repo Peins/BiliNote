@@ -54,6 +54,28 @@ class BilibiliDownloader(Downloader, ABC):
             output_dir=self.cache_data
         os.makedirs(output_dir, exist_ok=True)
 
+        # 先提取视频 ID，检查 mp3 是否已存在（避免并发任务重复下载导致文件冲突）
+        video_id = extract_video_id(video_url, "bilibili")
+        if video_id:
+            existing_mp3 = os.path.join(output_dir, f"{video_id}.mp3")
+            if os.path.exists(existing_mp3):
+                logger.info(f"音频文件已存在，跳过下载: {existing_mp3}")
+                # 仍需提取元信息
+                with yt_dlp.YoutubeDL({'quiet': True, 'skip_download': True,
+                                       'cookiefile': self._cookiefile} if self._cookiefile else
+                                      {'quiet': True, 'skip_download': True}) as ydl:
+                    info = ydl.extract_info(video_url, download=False)
+                return AudioDownloadResult(
+                    file_path=existing_mp3,
+                    title=info.get("title"),
+                    duration=info.get("duration", 0),
+                    cover_url=info.get("thumbnail"),
+                    platform="bilibili",
+                    video_id=info.get("id") or video_id,
+                    raw_info=info,
+                    video_path=None,
+                )
+
         output_path = os.path.join(output_dir, "%(id)s.%(ext)s")
 
         ydl_opts = {

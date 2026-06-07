@@ -78,6 +78,17 @@ def save_note_to_file(task_id: str, note):
         json.dump(asdict(note), f, ensure_ascii=False, indent=2)
 
 
+def _write_task_status(task_id: str, status: TaskStatus, message: str = None):
+    """直接写入任务状态文件，不需要初始化 NoteGenerator"""
+    os.makedirs(NOTE_OUTPUT_DIR, exist_ok=True)
+    status_file = os.path.join(NOTE_OUTPUT_DIR, f"{task_id}.status.json")
+    data = {"status": status.value if isinstance(status, TaskStatus) else status}
+    if message:
+        data["message"] = message
+    with open(status_file, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
 def _persist_prefetched_transcript(task_id: str, transcript: dict) -> None:
     """把客户端预取的字幕写到 NoteGenerator 期望的转写缓存文件里。
 
@@ -119,7 +130,8 @@ def run_note_task(task_id: str, video_url: str, platform: str, quality: Download
                   ):
 
     if not model_name or not provider_id:
-        raise HTTPException(status_code=400, detail="请选择模型和提供者")
+        _write_task_status(task_id, TaskStatus.FAILED, "请选择模型和提供者")
+        return
 
     def _execute_note_task():
         return NoteGenerator().generate(
@@ -140,7 +152,12 @@ def run_note_task(task_id: str, video_url: str, platform: str, quality: Download
         )
 
     logger.info(f"任务进入执行队列 (task_id={task_id})")
-    note = task_serial_executor.run(_execute_note_task)
+    try:
+        note = task_serial_executor.run(_execute_note_task)
+    except Exception as e:
+        logger.error(f"任务 {task_id} 执行失败，跳过保存")
+        _write_task_status(task_id, TaskStatus.FAILED, str(e))
+        return
     logger.info(f"Note generated: {task_id}")
     if not note or not note.markdown:
         logger.warning(f"任务 {task_id} 执行失败，跳过保存")
@@ -217,7 +234,7 @@ def generate_note(data: VideoRequest, background_tasks: BackgroundTasks):
             task_id = str(uuid.uuid4())
 
         # 统一先写入 PENDING，表示已进入队列等待串行执行
-        NoteGenerator()._update_status(task_id, TaskStatus.PENDING)
+        _write_task_status(task_id, TaskStatus.PENDING)
 
         # 客户端已经抓好字幕的话，写到转写缓存文件，NoteGenerator 的 cache-hit 逻辑会直接用上
         if data.prefetched_transcript:
