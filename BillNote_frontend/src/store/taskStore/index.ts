@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { delete_task, generateNote } from '@/services/note.ts'
+import { delete_task, generateNote, getTaskHistory } from '@/services/note.ts'
 import { v4 as uuidv4 } from 'uuid'
 import toast from 'react-hot-toast'
 import { get, set, del } from 'idb-keyval'
@@ -66,6 +66,7 @@ interface TaskStore {
   setCurrentTask: (taskId: string | null) => void
   getCurrentTask: () => Task | null
   retryTask: (id: string) => void
+  loadHistory: () => Promise<void>
 }
 
 export const useTaskStore = create<TaskStore>()(
@@ -222,6 +223,37 @@ export const useTaskStore = create<TaskStore>()(
       },
 
       clearTasks: () => set({ tasks: [], currentTaskId: null }),
+
+      loadHistory: async () => {
+        const resp = await getTaskHistory(100, 0)
+        if (!resp?.tasks) return
+
+        const historyTasks: Task[] = resp.tasks.map((item: any) => ({
+          id: item.task_id,
+          status: 'SUCCESS' as TaskStatus,
+          markdown: item.result?.markdown || '',
+          transcript: item.result?.transcript || { full_text: '', language: '', raw: null, segments: [] },
+          audioMeta: item.result?.audio_meta || {
+            cover_url: '', duration: 0, file_path: '', platform: '', raw_info: null, title: '', video_id: '',
+          },
+          createdAt: item.created_at || new Date().toISOString(),
+          formData: {
+            video_url: item.result?.audio_meta?.video_url || '',
+            link: undefined,
+            screenshot: undefined,
+            platform: item.result?.audio_meta?.platform || '',
+            quality: '',
+            model_name: '',
+            provider_id: '',
+          },
+        }))
+
+        set(state => {
+          const existingIds = new Set(state.tasks.map(t => t.id))
+          const newTasks = historyTasks.filter(t => !existingIds.has(t.id))
+          return { tasks: [...state.tasks, ...newTasks] }
+        })
+      },
 
       setCurrentTask: taskId => set({ currentTaskId: taskId }),
     }),

@@ -294,28 +294,85 @@ def get_task_status(task_id: str):
     })
 
 
+@router.get("/task_history")
+def get_task_history(limit: int = 20, offset: int = 0):
+    """扫描 note_results/ 目录，返回历史任务列表（按修改时间倒序）。"""
+    if not os.path.isdir(NOTE_OUTPUT_DIR):
+        return R.success({"tasks": [], "total": 0, "limit": limit, "offset": offset})
+
+    result_files = []
+    for fname in os.listdir(NOTE_OUTPUT_DIR):
+        # 只取主结果文件：{UUID}.json，排除辅助文件
+        if not fname.endswith(".json"):
+            continue
+        # 主结果文件的文件名中不包含下划线和多余的点（排除 _audio、_transcript、_markdown 等辅助文件）
+        stem = fname[:-5]  # 去掉 .json
+        if "_" in stem or ".status" in fname:
+            continue
+        fpath = os.path.join(NOTE_OUTPUT_DIR, fname)
+        if not os.path.isfile(fpath):
+            continue
+        result_files.append((fpath, fname, os.path.getmtime(fpath)))
+
+    # 按修改时间倒序（最新在前）
+    result_files.sort(key=lambda x: x[2], reverse=True)
+
+    total = len(result_files)
+    page = result_files[offset:offset + limit]
+
+    tasks = []
+    for fpath, fname, mtime in page:
+        task_id = fname[:-5]  # 去掉 .json
+        try:
+            with open(fpath, "r", encoding="utf-8") as f:
+                result_content = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            # 损坏的文件跳过
+            continue
+
+        from datetime import datetime, timezone
+        created_at = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
+
+        tasks.append({
+            "task_id": task_id,
+            "status": "SUCCESS",
+            "result": result_content,
+            "created_at": created_at,
+        })
+
+    return R.success({
+        "tasks": tasks,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
 @router.get("/image_proxy")
 async def image_proxy(request: Request, url: str):
+    from fastapi.responses import Response
+
     headers = {
         "Referer": "https://www.bilibili.com/",
         "User-Agent": request.headers.get("User-Agent", ""),
     }
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
             resp = await client.get(url, headers=headers)
 
             if resp.status_code != 200:
                 raise HTTPException(status_code=resp.status_code, detail="图片获取失败")
 
             content_type = resp.headers.get("Content-Type", "image/jpeg")
-            return StreamingResponse(
-                resp.aiter_bytes(),
+            return Response(
+                content=resp.content,
                 media_type=content_type,
                 headers={
-                    "Cache-Control": "public, max-age=86400",  #  缓存一天
-                    "Content-Type": content_type,
+                    "Cache-Control": "public, max-age=86400",
                 }
             )
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"上游图片请求失败: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

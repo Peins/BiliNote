@@ -59,6 +59,15 @@ export const delete_task = async ({ video_id, platform }) => {
   }
 }
 
+export const getTaskHistory = async (limit = 20, offset = 0) => {
+  try {
+    return await request.get('/task_history', { params: { limit, offset } })
+  } catch (e) {
+    console.error('❌ 获取历史任务失败', e)
+    return null
+  }
+}
+
 export const get_task_status = async (task_id: string) => {
   try {
     // 成功提示

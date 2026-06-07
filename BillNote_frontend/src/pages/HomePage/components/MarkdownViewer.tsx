@@ -406,7 +406,13 @@ const MarkdownViewer: FC<MarkdownViewerProps> = memo(({ status }) => {
   const handleDownload = () => {
     const task = getCurrentTask()
     const name = task?.audioMeta.title || 'note'
-    const blob = new Blob([selectedContent], { type: 'text/markdown;charset=utf-8' })
+    // 导出时将 /static/ 相对路径替换为完整 URL，确保在外部 markdown 编辑器中图片可加载
+    const staticBase = baseURL || window.location.origin
+    const exportContent = selectedContent.replace(
+      /!\[([^\]]*)\]\((\/static\/[^)]+)\)/g,
+      (_, alt, path) => `![${alt}](${staticBase}${path})`,
+    )
+    const blob = new Blob([exportContent], { type: 'text/markdown;charset=utf-8' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
     link.download = `${name}.md`

@@ -4,6 +4,7 @@ import { BrowserRouter, HashRouter, Navigate, Routes, Route } from 'react-router
 import { useTaskPolling } from '@/hooks/useTaskPolling.ts'
 import { useCheckBackend } from '@/hooks/useCheckBackend.ts'
 import { systemCheck } from '@/services/system.ts'
+import { useTaskStore } from '@/store/taskStore'
 import BackendInitDialog from '@/components/BackendInitDialog'
 import StartupBanner from '@/components/SystemDiagnostic/StartupBanner'
 import BackendHealthIndicator from '@/components/BackendHealth/BackendHealthIndicator'
@@ -39,6 +40,7 @@ function App() {
   useEffect(() => {
     if (initialized) {
       systemCheck()
+      useTaskStore.getState().loadHistory()
     }
   }, [initialized])
 
